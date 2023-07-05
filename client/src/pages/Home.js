@@ -1,33 +1,32 @@
-import React, { useState, useEffect } from 'react';
-import Hero from '../components/Hero'
-import Auth from '../utils/auth';
-import { searchRapid } from '../utils/API.js';
-import { saveStreamIds, getSavedStreamIds } from '../utils/localStorage';
-import { Button, Card } from 'react-bootstrap';
+import React, { useState, useEffect } from "react";
+import Hero from "../components/Hero";
+import Auth from "../utils/auth";
+import { searchRapid } from "../utils/API.js";
+import { saveStreamIds, getSavedStreamIds } from "../utils/localStorage";
+import { Button, Card } from "react-bootstrap";
 
-import { SAVE_STREAM } from '../utils/mutations';
-import {useMutation} from '@apollo/react-hooks';
-import './Home.css';
+import { SAVE_STREAM } from "../utils/mutations";
+import { useMutation } from "@apollo/react-hooks";
+import "./Home.css";
 
 const Home = () => {
-  // create state for holding returned google api data
+  // create state for holding returned rapidapi api data
   const [searchedStreams, setSearchedStreams] = useState([]);
   // create state for holding our search field data
-  const [searchInput, setSearchInput] = useState('');
+  const [searchInput, setSearchInput] = useState("");
 
-  // create state to hold saved bookId values
+  // create state to hold saved stream id
   const [savedStreamIds, setSavedStreamIds] = useState(getSavedStreamIds());
 
-  const [saveStream] = useMutation(SAVE_STREAM );
+  const [saveStream] = useMutation(SAVE_STREAM);
 
-
-  // set up useEffect hook to save `savedBookIds` list to localStorage on component unmount
+  // set up useEffect hook to save stream id list to localStorage on component unmount
   // learn more here: https://reactjs.org/docs/hooks-effect.html#effects-with-cleanup
   useEffect(() => {
     return () => saveStreamIds(savedStreamIds);
   });
 
-  // create method to search for books and set state on form submit
+  // create method to search for streams and set state on form submit
   const handleFormSubmit = async (event) => {
     event.preventDefault();
 
@@ -39,30 +38,31 @@ const Home = () => {
       const response = await searchRapid(searchInput);
 
       if (!response.ok) {
-        throw new Error('something went wrong!');
+        throw new Error("something went wrong!");
       }
 
-      const items  = await response.json();
-      
+      const items = await response.json();
+
       const streamData = items.results.map((stream) => ({
         streamId: stream.id,
         title: stream.name,
-        image: stream.picture || '',
+        image: stream.picture || "",
         link: stream.locations[0].url,
-        
       }));
 
       setSearchedStreams(streamData);
-      setSearchInput('');
+      setSearchInput("");
     } catch (err) {
       console.error(err);
     }
   };
 
-  // create function to handle saving a book to our database
+  // create function to handle saving a stream to our database
   const handleSaveStream = async (streamId) => {
-    // find the book in `searchedBooks` state by the matching id
-    const streamToSave = searchedStreams.find((stream) => stream.streamId === streamId);
+    // find the stream in `searchedStreams` state by the matching id
+    const streamToSave = searchedStreams.find(
+      (stream) => stream.streamId === streamId
+    );
 
     // get token
     const token = Auth.loggedIn() ? Auth.getToken() : null;
@@ -72,79 +72,97 @@ const Home = () => {
     }
 
     try {
-      const stream = {...streamToSave}
+      const stream = { ...streamToSave };
       console.log(stream);
       await saveStream({
-        variables: {input:{...stream} }//{ input: streamToSave }
+        variables: { input: { ...stream } }, //{ input: streamToSave }
       });
-      
+
       // if stream successfully saves to user's account, save stream id to state
       setSavedStreamIds([...savedStreamIds, streamToSave.streamId]);
     } catch (err) {
       console.error(err);
     }
   };
-    return (
-        <main className="container">
-          <div className="row d-flex justify-content-center mt-5">
-            <div className="col-md-5">
-              <h2>
-                {searchedStreams.length
-                  ? `Viewing ${searchedStreams.length} results:`
-                  : ''}
-              </h2>
-            </div>
-          </div>
-          <div className="row d-flex justify-content-center mb-5">
-            <div className="col-md-5">
-              <form className="input-group form form-group" onSubmit={handleFormSubmit}>
-                <input 
-                  className="form-control rounded input" 
-                  type="text"
-                  name="query"
-                  placeholder="Search for a Stream to Begin" 
-                  value={searchInput}
-                  onKeyDown={(e) => setSearchInput(e.target.value)}
-                  onChange={(e) => setSearchInput(e.target.value)}
-                  aria-label="Search"
-                  aria-describedby="search-addon" />
-                <button type="submit" className="btn btn-outline-primary">search</button>
-              </form>
-            </div>
-          </div>
-            <div className="d-flex flex-wrap justify-content-center">
-              {searchedStreams.map((stream) => {
-                return (
-                    <Card style={{ marginBottom:'1.25rem'}} key={stream.streamId} border='dark' className="mx-3">
-                    {stream.image ? (
-                      <Card.Img  src={stream.image} alt={`The cover for ${stream.title}`} variant='top' />
-                    ) : null}
-                    <Card.Body>
-                      <Card.Title>{stream.title}</Card.Title>
-                      <Card.Link href={stream.link}>
-                        Watch here!
-                      </Card.Link>
-                      <br></br>
-                      <br></br>
-                      {Auth.loggedIn() && (
-                        <Button
-                          disabled={savedStreamIds?.some((savedStreamId) => savedStreamId === stream.streamId)}
-                          className='btn-block btn-info'
-                          onClick={() => handleSaveStream(stream.streamId)}>
-                          {savedStreamIds?.some((savedStreamId) => savedStreamId === stream.streamId)
-                            ? 'This stream has already been saved!'
-                            : 'Save this Stream!'}
-                        </Button>
-                      )}
-                    </Card.Body>
-                  </Card>
-                );
-              })}
-            </div>
-              
-          {(searchedStreams.length > 0) ? null : <Hero />}
-        </main>
-    )
-}
+  return (
+    <main className="container">
+      <div className="row d-flex justify-content-center mt-5">
+        <div className="col-md-5">
+          <h2>
+            {searchedStreams.length
+              ? `Viewing ${searchedStreams.length} results:`
+              : ""}
+          </h2>
+        </div>
+      </div>
+      <div className="row d-flex justify-content-center mb-5">
+        <div className="col-md-5">
+          <form
+            className="input-group form form-group"
+            onSubmit={handleFormSubmit}
+          >
+            <input
+              className="form-control rounded input"
+              type="text"
+              name="query"
+              placeholder="Search for a Stream to Begin"
+              value={searchInput}
+              onKeyDown={(e) => setSearchInput(e.target.value)}
+              onChange={(e) => setSearchInput(e.target.value)}
+              aria-label="Search"
+              aria-describedby="search-addon"
+            />
+            <button type="submit" className="btn btn-outline-primary">
+              search
+            </button>
+          </form>
+        </div>
+      </div>
+      <div className="d-flex flex-wrap justify-content-center">
+        {searchedStreams.map((stream) => {
+          return (
+            <Card
+              style={{ marginBottom: "1.25rem" }}
+              key={stream.streamId}
+              border="dark"
+              className="mx-3"
+            >
+              {stream.image ? (
+                <Card.Img
+                  src={stream.image}
+                  alt={`The cover for ${stream.title}`}
+                  variant="top"
+                />
+              ) : null}
+              <Card.Body>
+                <Card.Title>{stream.title}</Card.Title>
+                <Card.Link href={stream.link}>Watch here!</Card.Link>
+                <br></br>
+                <br></br>
+                {Auth.loggedIn() && (
+                  <Button
+                    disabled={savedStreamIds?.some(
+                      (savedStreamId) => savedStreamId === stream.streamId
+                    )}
+                    className="btn-block btn-info"
+                    onClick={() => handleSaveStream(stream.streamId)}
+                  >
+                    {savedStreamIds?.some(
+                      (savedStreamId) => savedStreamId === stream.streamId
+                    )
+                      ? "This stream has already been saved!"
+                      : "Save this Stream!"}
+                  </Button>
+                )}
+              </Card.Body>
+            </Card>
+          );
+        })}
+      </div>
+
+      {searchedStreams.length > 0 ? null : <Hero />}
+    </main>
+  );
+};
 
 export default Home;
